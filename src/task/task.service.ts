@@ -1,26 +1,62 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { InjectRepository } from '@nestjs/typeorm';
+import { TaskEntity } from './entities/task.entity';
+import { Repository } from 'typeorm';
+import { IToDo } from 'src/interfaces/app-interface';
 
 @Injectable()
 export class TaskService {
-  create(createTaskDto: CreateTaskDto) {
-    return 'This action adds a new task';
+  constructor(
+    @InjectRepository(TaskEntity)
+    private readonly taskRepository: Repository<TaskEntity>,
+  ) {}
+
+  async create(createTaskDto: CreateTaskDto): Promise<TaskEntity[]> {
+    const { name } = createTaskDto;
+
+    const newTask: IToDo = this.taskRepository.create({ name });
+
+    await this.taskRepository.save(newTask);
+
+    return this.findAll();
   }
 
-  findAll() {
-    return `This action returns all task`;
+  async findAll() {
+    return this.taskRepository.find({ order: { id: 'ASC' } });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} task`;
+  async doneTask(id: number) {
+    const task = await this.findOne(id);
+    if (!task) return null;
+
+    task.isCompleted = !task.isCompleted;
+    await this.taskRepository.save(task);
+    return this.findAll();
   }
 
-  update(id: number, updateTaskDto: UpdateTaskDto) {
-    return `This action updates a #${id} task`;
+  async findOne(id: number) {
+    return this.taskRepository.findOneBy({ id });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} task`;
+  async update(id: number, updateTaskDto: UpdateTaskDto) {
+    const { name } = updateTaskDto;
+    if (!name) return null;
+
+    const task = await this.findOne(id);
+    if (!task) return null;
+
+    task.name = name;
+    await this.taskRepository.save(task);
+    return this.findAll();
+  }
+
+  async remove(id: number) {
+    const task = await this.findOne(id);
+    if (!task) return null;
+
+    await this.taskRepository.delete({ id });
+    return this.findAll();
   }
 }

@@ -5,7 +5,7 @@ export class TaskEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'text' })
   name: string;
 
   @Column({ type: 'boolean', default: false })
